@@ -1,0 +1,39 @@
+model Product {
+  id      String   @id @default(uuid())
+  title   String
+  slug    String   @unique
+  price   Float
+  sku     String?  @unique
+  barcode String?  @unique
+  images  String[]
+  color   String?
+  newArrival Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  description     ProductDescription?
+  productCategory ProductCategory[]
+  variantOption   VariantOption[]
+
+  @@map("products")
+}
+
+model ProductDescription {
+  id        String  @id @default(uuid())
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id])
+
+  intro        String?
+  bulletPoints String[] @default([])
+  outro        String?
+}
+
+model VariantOption {
+  id    String @id @default(uuid())
+  size  String // M, L, XL, XXL
+  stock Int    @default(0)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+}

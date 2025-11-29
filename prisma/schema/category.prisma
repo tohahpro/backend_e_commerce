@@ -1,0 +1,23 @@
+model Category {
+  id   String @id @default(uuid())
+  name String
+  slug String @unique
+
+  productCategory ProductCategory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categories")
+}
+
+model ProductCategory {
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@id([categoryId, productId])
+  @@map("product_categories")
+}
