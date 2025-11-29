@@ -1,8 +1,8 @@
 import { Request } from "express";
-import { fileUploader } from "../../app/helper/fileUploader";
+import { fileUploader } from "../../helper/fileUploader";
 import { PrismaClient } from "@prisma/client";
-import { paginationHelper } from "../../app/helper/paginationHelper";
-import ApiError from "../../app/errors/ApiError";
+import { paginationHelper } from "../../helper/paginationHelper";
+import ApiError from "../../errors/ApiError";
 
 
 const prisma = new PrismaClient();

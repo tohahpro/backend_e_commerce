@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from 'express'
-import { fileUploader } from '../../app/helper/fileUploader';
+import { fileUploader } from '../../helper/fileUploader';
 import { ProductValidation } from './product.validation';
 import { ProductController } from './product.controller';
 

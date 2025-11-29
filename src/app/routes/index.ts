@@ -1,6 +1,6 @@
 import express from 'express';
-import { CategoryRoutes } from '../../modules/category/category.routes';
-import { ProductRoutes } from '../../modules/product/product.routes';
+import { CategoryRoutes } from '../modules/category/category.routes';
+import { ProductRoutes } from '../modules/product/product.routes';
 
 const router = express.Router();
 
