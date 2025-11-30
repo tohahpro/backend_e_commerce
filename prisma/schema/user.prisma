@@ -1,6 +1,6 @@
 model User {
   id          String      @id @default(uuid())
-  name        String
+  name        String?
   email       String      @unique
   phone       String?     @unique
   password    String
@@ -26,12 +26,12 @@ model Address {
   userId      String
   user        User     @relation(fields: [userId], references: [id])
 
-  name        String
-  phone       String
-  address     String
-  city        String
-  postalCode  String
-  country     String     @default("Bangladesh")
+  name        String?
+  phone       String?
+  address     String?
+  city        String?
+  postalCode  String?
+  country     String?     @default("Bangladesh")
 
   createdAt   DateTime @default(now())
 

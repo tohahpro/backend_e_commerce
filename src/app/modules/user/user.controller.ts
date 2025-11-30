@@ -16,6 +16,19 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const updateProfile = catchAsync(async (req, res) => {
+  const userSession = req.cookies;
+  const result = await UserService.updateProfile(userSession, req.body);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Profile updated successfully",
+    data: result,
+  });
+});
+
 export const UserController = {
   registerUser,
+  updateProfile
 };

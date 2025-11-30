@@ -156,10 +156,41 @@ const resetPassword = async (token: string, payload: { id: string, password: str
     })
 };
 
+const getMe = async (session: any) => {
+    const accessToken = session.accessToken;
+    const decodedData = jwtHelper.verifyToken(accessToken, config.JWT.JWT_ACCESS_SECRET as Secret);
+
+    const userData = await prisma.user.findUniqueOrThrow({
+        where: {
+            email: decodedData.email
+        },
+        select: {
+            id: true,
+            email: true,
+            role: true,
+            phone: true,
+            addresses: {
+                select: {
+                    address: true,
+                    city: true,
+                    country: true,
+                    postalCode: true
+                }
+            },
+            createdAt: true,
+            updatedAt: true
+        }
+    });
+
+    return userData;
+
+}
+
 export const AuthService = {
     login,
     refreshToken,
     changePassword,
     forgotPassword,
     resetPassword,
+    getMe,
 }
