@@ -1,0 +1,14 @@
+model PaymentInfo {
+  id            String   @id @default(uuid())
+
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id])
+
+  method        String   
+  txnId         String?  
+  status        String   @default("PENDING")
+
+  createdAt     DateTime @default(now())
+
+  @@map("payment_info")
+}

@@ -1,13 +1,13 @@
 model Product {
-  id      String   @id @default(uuid())
-  title   String
-  slug    String   @unique
-  price   Float
-  sku     String?  @unique
-  barcode String?  @unique
-  images  String[]
-  color   String?
-  newArrival Boolean @default(false)
+  id         String   @id @default(uuid())
+  title      String
+  slug       String   @unique
+  price      Float
+  sku        String?  @unique
+  barcode    String?  @unique
+  images     String[]
+  color      String?
+  newArrival Boolean  @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -15,6 +15,8 @@ model Product {
   description     ProductDescription?
   productCategory ProductCategory[]
   variantOption   VariantOption[]
+  orderItems      OrderItem[]
+  wishlistItems   WishlistItem[]
 
   @@map("products")
 }

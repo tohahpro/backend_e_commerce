@@ -1,0 +1,58 @@
+model Order {
+  id              String        @id @default(uuid())
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id])
+
+  orderItems      OrderItem[]
+  shippingInfo    ShippingInfo?
+  paymentInfo     PaymentInfo?
+
+  totalAmount     Float
+  status          OrderStatus   @default(PENDING)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("orders")
+}
+
+
+model OrderItem {
+  id          String   @id @default(uuid())
+
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+
+  title       String
+  price       Float
+  quantity    Int
+  size        String?
+  color       String?
+  image       String?
+
+  createdAt   DateTime @default(now())
+
+  @@map("order_items")
+}
+
+
+model ShippingInfo {
+  id          String   @id @default(uuid())
+
+  orderId     String   @unique
+  order       Order    @relation(fields: [orderId], references: [id])
+
+  name        String
+  phone       String
+  address     String
+  city        String
+  postalCode  String
+  country     String     @default("Bangladesh")
+
+  createdAt   DateTime @default(now())
+
+  @@map("shipping_info")
+}
