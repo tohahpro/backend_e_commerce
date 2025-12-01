@@ -1,18 +1,20 @@
-import { PrismaClient } from "@prisma/client";
 import { Secret } from "jsonwebtoken";
-import { jwtHelper } from "../../helper/jwtHelper";
 import config from "../../config";
+import { stripe } from "../../helper/stripe";
+import { jwtHelper } from "../../helper/jwtHelper";
+import { OrderStatus, PrismaClient } from "@prisma/client";
+import { v4 as uuidv4 } from 'uuid';
 
 
 const prisma = new PrismaClient();
 
 
-const createOrder = async (session: any, payload: any) => {
+export const createOrder = async (session: any, payload: any) => {
     let userId: string | null = null;
     let wishlistItems: any[] = [];
     let orderItemsData: any[] = [];
-
-    // CHECK LOGGED USER
+    
+    // 1. CHECK AUTH USER    
     try {
         const accessToken = session?.accessToken;
         if (accessToken) {
@@ -28,9 +30,11 @@ const createOrder = async (session: any, payload: any) => {
 
             if (user) userId = user.id;
         }
-    } catch { }
+    } catch {}
 
-    // LOGGED-IN USER → USE WISHLIST
+    
+    // 2. LOGGED USER → WISHLIST ITEMS
+    
     if (userId) {
         wishlistItems = await prisma.wishlistItem.findMany({
             where: { userId },
@@ -41,19 +45,20 @@ const createOrder = async (session: any, payload: any) => {
             throw new Error("Your wishlist is empty!");
         }
 
-        // Convert wishlist items → orderItems
         orderItemsData = wishlistItems.map((item) => ({
             productId: item.productId,
             title: item.product.title,
             price: item.product.price,
-            quantity: item.quantity,        
+            quantity: item.quantity,
             size: item.size || null,
             color: item.color || null,
             image: item.product.images?.[0] || null,
         }));
     }
 
-    // GUEST USER → USE CART ITEMS
+    
+    // 3. GUEST USER → CART ITEMS
+    
     else {
         if (!payload.cartItems || payload.cartItems.length === 0) {
             throw new Error("Guest user must provide cartItems!");
@@ -75,16 +80,18 @@ const createOrder = async (session: any, payload: any) => {
             });
         }
     }
-
-
-    // CALCULATE TOTAL AMOUNT
+    
+    // 4. CALCULATE TOTAL AMOUNT    
     const totalAmount = orderItemsData.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
     );
 
-    // CREATE ORDER USING TRANSACTION
+    
+    // 5. CREATE ORDER + PAYMENT_INFO + SESSION
+    
     const result = await prisma.$transaction(async (tx) => {
+        // Create order
         const order = await tx.order.create({
             data: {
                 userId: userId,
@@ -93,7 +100,7 @@ const createOrder = async (session: any, payload: any) => {
             },
         });
 
-        // Insert each order item
+        // Order items
         for (const item of orderItemsData) {
             await tx.orderItem.create({
                 data: {
@@ -123,24 +130,52 @@ const createOrder = async (session: any, payload: any) => {
             },
         });
 
-        // Clear wishlist ONLY for logged user
+        const transactionId = uuidv4();
+        // Create PaymentInfo row
+        const paymentInfo = await tx.paymentInfo.create({
+            data: {
+                orderId: order.id,
+                method: "STRIPE",
+                status: OrderStatus.PENDING,
+                txnId: transactionId
+            },
+        });
+
+        // Create Stripe Session
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ["card"],
+            mode: "payment",
+            line_items: orderItemsData.map((item) => ({
+                price_data: {
+                    currency: "bdt",
+                    product_data: {
+                        name: item.title,
+                    },
+                    unit_amount: item.price * 100,
+                },
+                quantity: item.quantity,
+            })),
+
+            metadata: {
+                orderId: order.id,
+                paymentId: paymentInfo.id,
+            },
+
+            success_url: config.successUrl as string,
+            cancel_url: config.cancelUrl as string,
+        });
+
+        // Clear wishlist for logged user
         if (userId) {
             await tx.wishlistItem.deleteMany({
                 where: { userId },
             });
         }
-
-        return order;
+console.log(session);
+        return { order, paymentUrl: session.url };
     });
 
-    //  FINAL ORDER DETAILS
-    return await prisma.order.findUnique({
-        where: { id: result.id },
-        include: {
-            orderItems: true,
-            shippingInfo: true,
-        },
-    });
+    return result;
 };
 
 
