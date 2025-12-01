@@ -4,6 +4,7 @@ import { ProductRoutes } from '../modules/product/product.routes';
 import { UserRoutes } from '../modules/user/user.routes';
 import { AuthRoutes } from '../modules/auth/auth.routes';
 import { WishlistRoutes } from '../modules/wishList/wishList.routes';
+import { OrderRoutes } from '../modules/order/order.routes';
 
 const router = express.Router();
 
@@ -27,6 +28,10 @@ const moduleRoutes = [
     {
         path: '/wishlist',
         route: WishlistRoutes
+    },
+    {
+        path: '/orders',
+        route: OrderRoutes
     },
 
 ];

@@ -166,6 +166,7 @@ const getMe = async (session: any) => {
         },
         select: {
             id: true,
+            name: true,
             email: true,
             role: true,
             phone: true,

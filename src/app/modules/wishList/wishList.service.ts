@@ -7,7 +7,10 @@ import config from "../../config";
 
 const prisma = new PrismaClient();
 
-const addToWishlist = async (session: any, payload: { productId: string }) => {
+const addToWishlist = async (
+    session: any,
+    payload: { productId: string; size?: string; color?: string; quantity?: number }
+) => {
     const accessToken = session?.accessToken;
     if (!accessToken) {
         throw new Error("Unauthorized request");
@@ -24,64 +27,54 @@ const addToWishlist = async (session: any, payload: { productId: string }) => {
         select: { id: true }
     });
 
-    const { productId } = payload;
+    const { productId, size, color } = payload;
+    const quantity = payload.quantity || 1;
 
     // Check product exist
-    const product = await prisma.product.findUniqueOrThrow({
+    await prisma.product.findUniqueOrThrow({
         where: { id: productId },
-        select: {
-            id: true,
-            title: true,
-            slug: true,
-            price: true,
-            sku: true,
-            barcode: true,
-            images: true,  
-            color: true,
-            createdAt: true,
-            updatedAt: true
+    });
+
+    // Check if same item already exists (same size + same color)
+    const existing = await prisma.wishlistItem.findFirst({
+        where: {
+            userId: user.id,
+            productId,
+            size: size || null,
+            color: color || null
         }
     });
 
-    
-    const existing = await prisma.wishlistItem.findUnique({
-        where: {
-            userId_productId: {
-                userId: user.id,
-                productId: productId,
-            },
-        },
-    });
-
+    // If exists → increase quantity
     if (existing) {
-        throw new Error("Product already in wishlist");
+        const updated = await prisma.wishlistItem.update({
+            where: { id: existing.id },
+            data: {
+                quantity: existing.quantity + quantity
+            },
+            include: {
+                product: true
+            }
+        });
+
+        return updated;
     }
 
-    // Add to wishlist
-    const wishItem = await prisma.wishlistItem.create({
+    // Else create new wishlist item
+    const newWish = await prisma.wishlistItem.create({
         data: {
             userId: user.id,
             productId,
+            size,
+            color,
+            quantity
         },
         include: {
-            product: {
-                select: {
-                    id: true,
-                    title: true,
-                    slug: true,
-                    price: true,
-                    sku: true,
-                    barcode: true,
-                    images: true, 
-                    color: true,
-                    createdAt: true,
-                    updatedAt: true
-                }
-            }
-        },
+            product: true
+        }
     });
 
-    return wishItem;
+    return newWish;
 };
 
 const getUserWishlist = async (session: any) => {
@@ -111,7 +104,7 @@ const getUserWishlist = async (session: any) => {
                     price: true,
                     sku: true,
                     barcode: true,
-                    images: true, 
+                    images: true,
                     color: true,
                     createdAt: true,
                     updatedAt: true,
