@@ -19,6 +19,36 @@ const createCategory = async (payload: CreateCategoryPayload) => {
   return category;
 };
 
+const getAllCategories = async () => {
+  const categories = await prisma.category.findMany({
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+
+  return categories;
+};
+
+const getSingleCategory = async (id: string) => {
+  const category = await prisma.category.findUnique({
+    where: { id },
+  });
+
+  return category;
+};
+
+const deleteCategory = async (id: string) => {
+  const deleted = await prisma.category.delete({
+    where: { id },
+  });
+
+  return deleted;
+};
+
+
 export const CategoryService = {
   createCategory,
+  getAllCategories,
+  getSingleCategory,
+  deleteCategory
 };
