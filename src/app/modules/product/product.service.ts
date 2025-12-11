@@ -1,8 +1,9 @@
 import { Request } from "express";
 import { fileUploader } from "../../helper/fileUploader";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { paginationHelper } from "../../helper/paginationHelper";
 import ApiError from "../../errors/ApiError";
+import { productSearchableFields } from "./product.constant";
 
 
 const prisma = new PrismaClient();
@@ -41,6 +42,7 @@ const createProduct = async (req: Request) => {
         categories,
         newArrival
     } = data;
+
 
     // ⭐ Transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -106,36 +108,59 @@ const getAllProducts = async (params: any, options: any) => {
     // Pagination
     const { page, limit, skip, sortBy, sortOrder } = paginationHelper.calculatePagination(options);
 
-    const { searchValue } = params;
+    const { searchValue, categories, ...filterData } = params;
+
+
+    const andConditions: Prisma.ProductWhereInput[] = [];
 
     // Search conditions
-    const searchCondition =
-        searchValue && searchValue.length > 0
-            ? {
-                OR: [
-                    { title: { contains: searchValue, mode: "insensitive" } },
-                    { slug: { contains: searchValue, mode: "insensitive" } },
-                    { sku: { contains: searchValue, mode: "insensitive" } },
-                ],
-            }
-            : {};
+    if (searchValue) {
+        andConditions.push({
+            OR: productSearchableFields.map((field) => ({
+                [field]: {
+                    contains: searchValue,
+                    mode: "insensitive"
+                }
+            }))
+        })
+    }
 
-    // Final where clause
-    const whereConditions: any = {
-        AND: [searchCondition],
-    };
+    if (categories && categories.length > 0) {
+        andConditions.push({
+            productCategory: {
+                some: {
+                    category: {
+                        name: {
+                            contains: categories,
+                            mode: "insensitive"
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    if (Object.keys(filterData).length > 0) {
+        const filterConditions = Object.keys(filterData).map((key) => ({
+            [key]: {
+                equals: (filterData as any)[key]
+            }
+        }))
+
+        andConditions.push(...filterConditions)
+    }
+
+    const whereConditions: Prisma.ProductWhereInput = andConditions.length > 0 ? { AND: andConditions } : {}
+
 
     // Get data
     const products = await prisma.product.findMany({
         where: whereConditions,
         skip,
         take: limit,
-        orderBy:
-            sortBy && sortOrder
-                ? { [sortBy]: sortOrder }
-                : {
-                    createdAt: "desc",
-                },
+        orderBy: {
+            [sortBy]: sortOrder
+        },
         include: {
             productCategory: {
                 include: {
@@ -194,7 +219,7 @@ const updateProduct = async (id: string, req: Request) => {
     let uploadedImages: string[] = [];
 
     // 1️⃣ Upload new images
-    if (files?.length > 0) {
+    if (Array.isArray(files) && files.length > 0) {
         for (const file of files) {
             const upload = await fileUploader.uploadToCloudinary(file);
             if (upload?.secure_url) uploadedImages.push(upload.secure_url);
@@ -225,7 +250,7 @@ const updateProduct = async (id: string, req: Request) => {
                 barcode: data.barcode,
                 color: data.color,
                 images: finalImages,
-                newArrival: data.newArrival
+                newArrival: Boolean(data.newArrival)
             }
         });
 
@@ -283,6 +308,8 @@ const updateProduct = async (id: string, req: Request) => {
         return updatedProduct;
     });
 };
+
+
 
 const deleteProduct = async (id: string) => {
 
