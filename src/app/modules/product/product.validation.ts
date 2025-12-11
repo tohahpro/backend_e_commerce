@@ -23,6 +23,7 @@ const createProductSchema = z.object({
   color: z.string().optional(),
   description: productDescriptionSchema.optional(),
   categories: z.array(z.string()).optional(),
+  newArrival: z.boolean().optional(),
   variantOptions: z.array(variantOptionSchema).optional(),
 });
 
@@ -36,6 +37,7 @@ const updateProductSchema = z.object({
   color: z.string().optional(),
   description: productDescriptionSchema.optional(),
   categories: z.array(z.string()).optional(),
+  newArrival: z.boolean().optional(),
   variantOptions: z.array(variantOptionSchema).optional(),
 });
 
