@@ -32,6 +32,19 @@ const getAllProducts = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getProductBySlug = catchAsync(async (req: Request, res: Response) => {
+  const { slug } = req.params;
+
+  const result = await ProductService.getProductBySlug(slug);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Product retrieved successfully by slug",
+    data: result,
+  });
+});
+
 
 const getProductById = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -80,5 +93,6 @@ export const ProductController = {
     getAllProducts,
     getProductById,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    getProductBySlug
 }

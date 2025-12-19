@@ -28,6 +28,7 @@ router.patch(
 );
 
 router.get("/", ProductController.getAllProducts);
+router.get("/:slug", ProductController.getProductBySlug);
 router.get("/:id", ProductController.getProductById);
 
 router.delete("/:id", ProductController.deleteProduct);
